@@ -42,43 +42,91 @@ A full-stack AI surveillance system prototype for attribute-based person search 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- Python 3.10+ (for local development)
+- Docker and Docker Compose installed and running
+- PowerShell or Bash terminal
+- (Optional) Node.js 18+ for frontend local development
+- (Optional) Python 3.10+ for backend local development
 
-### Using Docker Compose (Recommended)
+### Using Docker Compose (Recommended) ⭐
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd surveillance-saraem
+#### Step 1: Start Backend Services
+Navigate to the project root and start the database, Redis, and backend:
+
+```powershell
+cd C:\Users\SARA\OneDrive\Desktop\00_FYP1\surveillance-saraem
+
+# Start backend services (db, redis, backend API)
+docker compose up db redis backend
 ```
 
-2. Copy the environment file:
-```bash
-cp .env.example .env
+**Wait for this message to appear:**
+```
+backend-1  | INFO:     Application startup complete.
 ```
 
-3. Start all services:
-```bash
-docker-compose up -d
+#### Step 2: Test Backend API (Optional but Recommended)
+
+Open a **new PowerShell terminal** and run:
+
+```powershell
+# Login to get JWT token
+$response = Invoke-RestMethod -Uri "http://localhost:8000/api/v1/auth/login" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"username":"admin","password":"admin123"}'
+
+# Display the token
+$response
+
+# Save token for testing
+$token = $response.access_token
+
+# Test authenticated endpoint
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/auth/me" `
+  -Method Get `
+  -Headers @{"Authorization"="Bearer $token"}
 ```
 
-4. Access the application:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/api/docs
+Or visit in browser:
+- **Swagger API Docs**: http://localhost:8000/api/docs
+- **Health Check**: http://localhost:8000/health
+- **API Root**: http://localhost:8000/
 
-### Default Credentials
+#### Step 3: Start Frontend (New Terminal)
+
+```powershell
+cd C:\Users\SARA\OneDrive\Desktop\00_FYP1\surveillance-saraem\frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Start development server
+npm run dev
+```
+
+Frontend will be available at: **http://localhost:5173**
+
+#### Step 4: Login to Frontend
+
+Use these credentials:
 
 | Role | Username | Password |
 |------|----------|----------|
 | Admin | admin | admin123 |
 | Security | security | security123 |
 
+### Default Credentials
+
+All default users are automatically created on first database initialization:
+
+| Role | Username | Email | Password |
+|------|----------|-------|----------|
+| Admin | admin | admin@surveillance.dev | admin123 |
+| Security Personnel | security | security@surveillance.dev | security123 |
+
 ## Local Development
 
-### Backend Setup
+### Backend Setup (Without Docker)
 
 ```bash
 cd backend
@@ -90,17 +138,30 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Set up environment variables
+# Set environment variables
+# Windows PowerShell:
+$env:DATABASE_URL = "postgresql://surveillance_user:secure_password@localhost:5432/surveillance_db"
+$env:REDIS_URL = "redis://localhost:6379/0"
+
+# Or Linux/Mac:
 export DATABASE_URL=postgresql://surveillance_user:secure_password@localhost:5432/surveillance_db
+export REDIS_URL=redis://localhost:6379/0
 
 # Run migrations
 alembic upgrade head
 
 # Start the server
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Setup
+Backend will be available at: http://localhost:8000
+
+**Note:** You'll need PostgreSQL and Redis running locally. Use Docker Compose for those:
+```powershell
+docker compose up -d db redis
+```
+
+### Frontend Setup (Without Docker)
 
 ```bash
 cd frontend
@@ -111,6 +172,10 @@ npm install
 # Start development server
 npm run dev
 ```
+
+Frontend will be available at: http://localhost:5173
+
+The frontend will automatically proxy API calls to http://localhost:8000/api/v1
 
 ## Project Structure
 
@@ -226,6 +291,77 @@ npm run test
 2. Make changes
 3. Run tests
 4. Submit pull request
+
+## Restart & Troubleshooting
+
+### Restart Backend Services
+
+**Full restart (clears database):**
+```powershell
+docker compose down -v
+docker compose up --build db redis backend
+```
+
+**Quick restart (keeps database):**
+```powershell
+docker compose down
+docker compose up db redis backend
+```
+
+**Rebuild after code changes:**
+```powershell
+docker compose up --build db redis backend
+```
+
+### View Backend Logs
+
+```powershell
+# Last 50 lines
+docker compose logs backend -n 50
+
+# Follow logs in real-time
+docker compose logs -f backend
+```
+
+### Common Issues
+
+**Issue: Port 8000 already in use**
+```powershell
+# Find process using port 8000
+netstat -ano | findstr :8000
+
+# Kill it (replace PID with actual process ID)
+taskkill /PID <PID> /F
+```
+
+**Issue: Database connection errors**
+- Wait 10-15 seconds for PostgreSQL to fully initialize
+- Check: `docker compose ps` to see if db container is healthy
+- If unhealthy, run: `docker compose down -v && docker compose up db redis backend`
+
+**Issue: Frontend can't reach backend**
+- Ensure backend is running: `curl http://localhost:8000/health`
+- Check CORS settings in `backend/app/core/config.py`
+- Restart frontend: `npm run dev`
+
+**Issue: 401 Unauthorized errors**
+- Ensure you're sending the Authorization header with the Bearer token
+- Token may be expired - re-login to get a new token
+- Check token format: `Authorization: Bearer <token>`
+
+### Stopping Services
+
+```powershell
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (clears database data)
+docker compose down -v
+
+# Stop only specific services
+docker compose stop backend
+docker compose stop db redis
+```
 
 ## Acknowledgments
 

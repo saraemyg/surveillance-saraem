@@ -14,7 +14,7 @@ def init_db(db: Session) -> None:
         # Create default admin user
         admin_user = User(
             username="admin",
-            email="admin@surveillance.local",
+            email="admin@surveillance.dev",
             password_hash=get_password_hash("admin123"),
             role="admin",
             is_active=True,
@@ -29,7 +29,7 @@ def init_db(db: Session) -> None:
     if not demo_user:
         security_user = User(
             username="security",
-            email="security@surveillance.local",
+            email="security@surveillance.dev",
             password_hash=get_password_hash("security123"),
             role="security_personnel",
             is_active=True,
