@@ -4,21 +4,25 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
-  Video,
-  Search,
-  BarChart3,
-  Settings,
+  Eye,
+  Archive,
   LogOut,
   Shield,
   User,
+  Layers,
 } from 'lucide-react'
 
-const navItems = [
+// Admin navigation items (2 pages)
+const adminNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/videos', label: 'Video Processing', icon: Video },
-  { path: '/search', label: 'Search', icon: Search },
-  { path: '/performance', label: 'Performance', icon: BarChart3 },
-  { path: '/settings', label: 'Settings', icon: Settings, adminOnly: true },
+  { path: '/video-processing', label: 'Video Processing', icon: Layers },
+]
+
+// Security navigation items (3 pages)
+const securityNavItems = [
+  { path: '/security-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/live-surveillance', label: 'Live Surveillance', icon: Eye },
+  { path: '/video-archive', label: 'Video Archive', icon: Archive },
 ]
 
 export default function Layout() {
@@ -31,9 +35,8 @@ export default function Layout() {
     navigate('/login')
   }
 
-  const filteredNavItems = navItems.filter(
-    (item) => !item.adminOnly || user?.role === 'admin'
-  )
+  // Select navigation based on user role
+  const navItems = user?.role === 'admin' ? adminNavItems : securityNavItems
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +53,7 @@ export default function Layout() {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
-            {filteredNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
 
