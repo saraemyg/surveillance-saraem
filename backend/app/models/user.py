@@ -27,6 +27,7 @@ class User(Base):
     # Relationships
     videos = relationship("Video", back_populates="uploader")
     search_history = relationship("SearchHistory", back_populates="user")
+    alert_rules = relationship("AlertRule", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User {self.username}>"

@@ -31,4 +31,26 @@ export const searchService = {
   async clearSearchHistory(): Promise<void> {
     await api.delete('/search/history')
   },
+
+  // UR8: Evidence Export functions
+  async exportResultsJson(query: AdvancedSearchQuery): Promise<Blob> {
+    const response = await api.post('/search/export/json', query, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  async exportResultsCsv(query: AdvancedSearchQuery): Promise<Blob> {
+    const response = await api.post('/search/export/csv', query, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  async exportDetectionMetadata(detectionId: number): Promise<Blob> {
+    const response = await api.get(`/search/export/detection/${detectionId}/metadata`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
 }
