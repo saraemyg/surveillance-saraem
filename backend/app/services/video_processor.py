@@ -97,7 +97,9 @@ class VideoProcessor:
             os.makedirs(crops_dir, exist_ok=True)
 
             # Process frames (sample every N frames for efficiency)
-            frame_interval = max(1, int(fps / 2))  # ~2 detections per second
+            # FR7: Real-Time Attribute Recognition - configurable frame interval
+            # Default: every 5th frame to balance accuracy and computational efficiency
+            frame_interval = max(1, settings.ATTRIBUTE_INTERVAL_FRAMES)
             total_detections = 0
             processed_frames = 0
 

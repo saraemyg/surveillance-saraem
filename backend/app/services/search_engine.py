@@ -92,13 +92,14 @@ class SearchEngine:
             filters.append(Detection.timestamp_in_video <= end_timestamp)
 
         # Apply confidence filter (computed from individual confidences)
-        # Since aggregate_confidence is a computed property, we filter manually
+        # FR9: Search Result Ranking - aggregate confidence is product of
+        # detection confidence and attribute classification confidences
+        # Using geometric mean of available confidences for balanced filtering
         filters.append(
-            (
-                func.coalesce(Attribute.upper_color_confidence, 0) +
-                func.coalesce(Attribute.lower_color_confidence, 0) +
-                func.coalesce(Attribute.gender_confidence, 0)
-            ) / 3.0 >= min_confidence
+            Detection.detection_confidence *
+            func.coalesce(Attribute.upper_color_confidence, 1.0) *
+            func.coalesce(Attribute.lower_color_confidence, 1.0) *
+            func.coalesce(Attribute.gender_confidence, 1.0) >= min_confidence
         )
 
         if filters:
@@ -108,12 +109,14 @@ class SearchEngine:
         total_count = query.count()
 
         # Apply sorting
+        # FR9: Sort by product of detection and attribute confidences
         if sort_by == "confidence":
             sort_expr = (
-                func.coalesce(Attribute.upper_color_confidence, 0) +
-                func.coalesce(Attribute.lower_color_confidence, 0) +
-                func.coalesce(Attribute.gender_confidence, 0)
-            ) / 3.0
+                Detection.detection_confidence *
+                func.coalesce(Attribute.upper_color_confidence, 1.0) *
+                func.coalesce(Attribute.lower_color_confidence, 1.0) *
+                func.coalesce(Attribute.gender_confidence, 1.0)
+            )
         else:  # timestamp
             sort_expr = Detection.timestamp_in_video
 
@@ -131,11 +134,13 @@ class SearchEngine:
         # Transform to response schema
         items = []
         for detection, attribute, video in results:
+            # FR9: Aggregate confidence is product of detection and attribute confidences
             aggregate_conf = (
-                (attribute.upper_color_confidence or 0) +
-                (attribute.lower_color_confidence or 0) +
-                (attribute.gender_confidence or 0)
-            ) / 3.0
+                detection.detection_confidence *
+                (attribute.upper_color_confidence or 1.0) *
+                (attribute.lower_color_confidence or 1.0) *
+                (attribute.gender_confidence or 1.0)
+            )
 
             items.append(SearchResultItem(
                 detection_id=detection.detection_id,

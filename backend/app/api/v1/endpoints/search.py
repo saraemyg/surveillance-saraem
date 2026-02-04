@@ -1,5 +1,12 @@
 """Search API endpoints."""
-from fastapi import APIRouter, Depends, HTTPException, status
+import csv
+import io
+import json
+from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
@@ -221,3 +228,234 @@ def clear_search_history(
     db.commit()
 
     return {"message": "Search history cleared"}
+
+
+@router.post("/export/json")
+def export_search_results_json(
+    query: AdvancedSearchQuery,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """
+    UR8: Evidence Export - Export search results as JSON file.
+
+    Args:
+        query: Advanced search query with filters
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        JSON file download
+    """
+    # Execute search with higher limit for export
+    query.limit = min(query.limit, 1000)  # Cap at 1000 for export
+    search_engine = get_search_engine(db)
+    results, total_count = search_engine.search_advanced(query)
+
+    # Build export data
+    export_data = {
+        "export_timestamp": datetime.utcnow().isoformat(),
+        "exported_by": current_user.username,
+        "query_parameters": {
+            "gender": query.gender,
+            "upper_color": query.upper_color,
+            "lower_color": query.lower_color,
+            "min_confidence": query.min_confidence,
+            "video_id": query.video_id,
+            "start_timestamp": query.start_timestamp,
+            "end_timestamp": query.end_timestamp,
+        },
+        "total_results": total_count,
+        "results": [
+            {
+                "detection_id": r.detection_id,
+                "video_id": r.video_id,
+                "video_filename": r.video_filename,
+                "frame_number": r.frame_number,
+                "timestamp_in_video": r.timestamp_in_video,
+                "bounding_box": {
+                    "x": r.bbox_x,
+                    "y": r.bbox_y,
+                    "width": r.bbox_width,
+                    "height": r.bbox_height,
+                },
+                "detection_confidence": r.detection_confidence,
+                "attributes": {
+                    "gender": r.gender,
+                    "gender_confidence": r.gender_confidence,
+                    "upper_color": r.upper_color,
+                    "upper_color_confidence": r.upper_color_confidence,
+                    "lower_color": r.lower_color,
+                    "lower_color_confidence": r.lower_color_confidence,
+                },
+                "aggregate_confidence": r.aggregate_confidence,
+            }
+            for r in results
+        ],
+    }
+
+    # Create JSON response
+    json_content = json.dumps(export_data, indent=2)
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"search_results_{timestamp}.json"
+
+    return StreamingResponse(
+        io.BytesIO(json_content.encode("utf-8")),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/export/csv")
+def export_search_results_csv(
+    query: AdvancedSearchQuery,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """
+    UR8: Evidence Export - Export search results as CSV file.
+
+    Args:
+        query: Advanced search query with filters
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        CSV file download
+    """
+    # Execute search with higher limit for export
+    query.limit = min(query.limit, 1000)  # Cap at 1000 for export
+    search_engine = get_search_engine(db)
+    results, total_count = search_engine.search_advanced(query)
+
+    # Create CSV content
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        "Detection ID",
+        "Video ID",
+        "Video Filename",
+        "Frame Number",
+        "Timestamp (seconds)",
+        "Bbox X",
+        "Bbox Y",
+        "Bbox Width",
+        "Bbox Height",
+        "Detection Confidence",
+        "Gender",
+        "Gender Confidence",
+        "Upper Color",
+        "Upper Color Confidence",
+        "Lower Color",
+        "Lower Color Confidence",
+        "Aggregate Confidence",
+    ])
+
+    # Write data rows
+    for r in results:
+        writer.writerow([
+            r.detection_id,
+            r.video_id,
+            r.video_filename,
+            r.frame_number,
+            round(r.timestamp_in_video, 2),
+            r.bbox_x,
+            r.bbox_y,
+            r.bbox_width,
+            r.bbox_height,
+            round(r.detection_confidence, 3),
+            r.gender or "",
+            round(r.gender_confidence, 3) if r.gender_confidence else "",
+            r.upper_color or "",
+            round(r.upper_color_confidence, 3) if r.upper_color_confidence else "",
+            r.lower_color or "",
+            round(r.lower_color_confidence, 3) if r.lower_color_confidence else "",
+            round(r.aggregate_confidence, 3),
+        ])
+
+    # Create response
+    output.seek(0)
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"search_results_{timestamp}.csv"
+
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/export/detection/{detection_id}/metadata")
+def export_detection_metadata(
+    detection_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """
+    UR8: Evidence Export - Export metadata for a specific detection.
+
+    Args:
+        detection_id: Detection ID
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        JSON file with detection metadata
+    """
+    search_engine = get_search_engine(db)
+    # Search for specific detection
+    results, _ = search_engine.search(limit=1000)
+
+    # Find the specific detection
+    detection = None
+    for r in results:
+        if r.detection_id == detection_id:
+            detection = r
+            break
+
+    if not detection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Detection not found",
+        )
+
+    # Build metadata export
+    export_data = {
+        "export_timestamp": datetime.utcnow().isoformat(),
+        "exported_by": current_user.username,
+        "detection": {
+            "detection_id": detection.detection_id,
+            "video_id": detection.video_id,
+            "video_filename": detection.video_filename,
+            "frame_number": detection.frame_number,
+            "timestamp_in_video": detection.timestamp_in_video,
+            "timestamp_formatted": f"{int(detection.timestamp_in_video // 60)}:{int(detection.timestamp_in_video % 60):02d}",
+            "bounding_box": {
+                "x": detection.bbox_x,
+                "y": detection.bbox_y,
+                "width": detection.bbox_width,
+                "height": detection.bbox_height,
+            },
+            "detection_confidence": detection.detection_confidence,
+            "attributes": {
+                "gender": detection.gender,
+                "gender_confidence": detection.gender_confidence,
+                "upper_color": detection.upper_color,
+                "upper_color_confidence": detection.upper_color_confidence,
+                "lower_color": detection.lower_color,
+                "lower_color_confidence": detection.lower_color_confidence,
+            },
+            "aggregate_confidence": detection.aggregate_confidence,
+        },
+    }
+
+    json_content = json.dumps(export_data, indent=2)
+    filename = f"detection_{detection_id}_metadata.json"
+
+    return StreamingResponse(
+        io.BytesIO(json_content.encode("utf-8")),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

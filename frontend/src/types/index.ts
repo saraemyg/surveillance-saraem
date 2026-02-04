@@ -73,3 +73,55 @@ export interface PaginatedResponse<T> {
   page_size: number
   total_pages: number
 }
+
+// UR5: Alert types for reduced monitoring burden
+export interface AlertRule {
+  rule_id: number
+  user_id: number
+  name: string
+  description: string | null
+  gender: string | null
+  upper_color: string | null
+  lower_color: string | null
+  min_confidence: number
+  is_active: boolean
+  notify_on_match: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AlertRuleCreate {
+  name: string
+  description?: string
+  gender?: string
+  upper_color?: string
+  lower_color?: string
+  min_confidence?: number
+  is_active?: boolean
+  notify_on_match?: boolean
+}
+
+export interface TriggeredAlert {
+  alert_id: number
+  rule_id: number
+  rule_name: string | null
+  detection_id: number
+  video_id: number
+  video_filename: string | null
+  matched_attributes: Record<string, unknown> | null
+  confidence_score: number | null
+  timestamp_in_video: number | null
+  is_read: boolean
+  is_acknowledged: boolean
+  acknowledged_by: number | null
+  acknowledged_at: string | null
+  triggered_at: string
+}
+
+export interface AlertStats {
+  total_rules: number
+  active_rules: number
+  total_triggered: number
+  unread_alerts: number
+  unacknowledged_alerts: number
+}
