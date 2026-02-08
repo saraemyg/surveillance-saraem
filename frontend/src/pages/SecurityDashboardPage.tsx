@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { metricsService } from '@/services'
 import MetricsCard from '@/components/dashboard/MetricsCard'
-import { GenderChart, ColorChart, DetectionsChart } from '@/components/dashboard/PerformanceChart'
+import { ColorChart, DetectionsChart } from '@/components/dashboard/PerformanceChart'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,6 @@ import {
   Users,
   Gauge,
   Loader2,
-  TrendingUp,
   AlertTriangle,
   Plus,
   FileText,
@@ -185,12 +184,6 @@ export default function SecurityDashboardPage() {
           description="Processing speed"
         />
         <MetricsCard
-          title="Area Reduction"
-          value={`${summary?.average_area_reduction?.toFixed(1) || 0}%`}
-          icon={TrendingUp}
-          description="Efficiency"
-        />
-        <MetricsCard
           title="Open Incidents"
           value={openIncidents}
           icon={AlertTriangle}
@@ -208,9 +201,6 @@ export default function SecurityDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Charts Column */}
         <div className="space-y-4">
-          {attributeMetrics && (
-            <GenderChart data={attributeMetrics.gender_distribution} />
-          )}
           {detectionsData.length > 0 && (
             <DetectionsChart data={detectionsData} />
           )}

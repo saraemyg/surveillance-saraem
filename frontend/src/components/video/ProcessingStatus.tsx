@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { videoService } from '@/services'
 import { Video, VideoProcessingStatus as ProcessingStatusType } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,6 @@ function VideoCard({ video, onProcess, onDelete }: VideoCardProps) {
   }, [statusData])
 
   const isProcessing = video.processing_status === 'processing'
-  const isCompleted = video.processing_status === 'completed'
   const canProcess = video.processing_status === 'uploaded'
 
   return (

@@ -10,12 +10,14 @@ import {
   Shield,
   User,
   Layers,
+  BarChart3,
 } from 'lucide-react'
 
-// Admin navigation items (2 pages)
+// Admin navigation items (3 pages)
 const adminNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/video-processing', label: 'Video Processing', icon: Layers },
+  { path: '/performance', label: 'Performance Metrics', icon: BarChart3 },
 ]
 
 // Security navigation items (3 pages)
@@ -45,7 +47,7 @@ export default function Layout() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b">
-            <Link to="/dashboard" className="flex items-center gap-2">
+            <Link to={user?.role === 'admin' ? '/dashboard' : '/security-dashboard'} className="flex items-center gap-2">
               <Shield className="h-8 w-8 text-primary" />
               <span className="text-xl font-bold">Surveillance</span>
             </Link>

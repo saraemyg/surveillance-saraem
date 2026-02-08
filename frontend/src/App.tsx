@@ -6,10 +6,11 @@ import Layout from '@/components/Layout'
 import LoginPage from '@/pages/LoginPage'
 // Admin Pages
 import AdminDashboardPage from '@/pages/AdminDashboardPage'
-import AdminVideoProcessingPage from '@/pages/AdminVideoProcessingPage'
+import PerformanceMetricsDashboard from '@/pages/processing/PerformanceMetricsDashboard'
 // Security Pages
 import SecurityDashboardPage from '@/pages/SecurityDashboardPage'
-import LiveSurveillancePage from '@/pages/LiveSurveillancePage'
+import SecurityFeed from '@/pages/SecurityFeed'
+import { AlertDashboard } from '@/pages/AlertDashboard'
 import VideoArchivePage from '@/pages/VideoArchivePage'
 
 // Role-based redirect component
@@ -17,9 +18,9 @@ function RoleBasedRedirect() {
   const { user } = useAuth()
 
   if (user?.role === 'admin') {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/performance-metrics" replace />
   }
-  return <Navigate to="/security-dashboard" replace />
+  return <Navigate to="/security-feed" replace />
 }
 
 function App() {
@@ -37,12 +38,15 @@ function App() {
             }
           >
             <Route index element={<RoleBasedRedirect />} />
-            {/* Admin Routes (2 pages) */}
+            {/* Admin Routes (4 pages) */}
             <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="video-processing" element={<AdminVideoProcessingPage />} />
+            <Route path="performance-metrics" element={<PerformanceMetricsDashboard />} />
+            {/* <Route path="video-processing" element={<AdminVideoProcessingPage />} /> */}
+            {/* <Route path="performance" element={<PerformancePage />} /> */}
             {/* Security Routes (3 pages) */}
             <Route path="security-dashboard" element={<SecurityDashboardPage />} />
-            <Route path="live-surveillance" element={<LiveSurveillancePage />} />
+            <Route path="security-feed" element={<SecurityFeed />} />
+            <Route path="alert-dashboard" element={<AlertDashboard />} />
             <Route path="video-archive" element={<VideoArchivePage />} />
           </Route>
         </Routes>

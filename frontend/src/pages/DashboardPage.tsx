@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { metricsService } from '@/services'
 import MetricsCard from '@/components/dashboard/MetricsCard'
 import RecentActivityList from '@/components/dashboard/RecentActivity'
-import { GenderChart, ColorChart, DetectionsChart } from '@/components/dashboard/PerformanceChart'
+import { ColorChart, DetectionsChart } from '@/components/dashboard/PerformanceChart'
 import { Video, Users, Gauge, Clock } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 
@@ -79,9 +79,6 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {attributeMetrics && (
-          <GenderChart data={attributeMetrics.gender_distribution} />
-        )}
         {detectionsData.length > 0 && (
           <DetectionsChart data={detectionsData} />
         )}

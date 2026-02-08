@@ -1,6 +1,6 @@
 // API endpoints
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+export const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || '/api/v1'
+export const WS_URL = (import.meta as any).env.VITE_WS_URL || 'ws://localhost:8000/ws'
 
 // File upload constraints
 export const MAX_FILE_SIZE_MB = 500
